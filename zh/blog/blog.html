@@ -12,7 +12,7 @@
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/sidebars/">
 
-    <link href="../static/css/bootstrap_5.2.3.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap_5.2.3.min.css" rel="stylesheet">
 
     <style>
       .bd-placeholder-img {
@@ -69,29 +69,17 @@
 
     
     <!-- Custom styles for this template -->
-    <link href="../static/css/sidebars.css" rel="stylesheet">
+    <link href="/static/css/sidebars.css" rel="stylesheet">
   </head>
   <body>
     <main class="d-flex flex-nowrap">
         <!-- sidebars -->
         <div class="flex-shrink-0 p-3 bg-white" style="width: 280px;">
-            <a href="../index.html" class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
+            <a href="/index.html" class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
             <!-- <svg class="bi pe-none me-2" width="30" height="24"><use xlink:href="#bootstrap"/></svg> -->
             <span class="fs-5 fw-semibold">ZhuShaoQiang's Blog</span>
             </a>
             <ul class="list-unstyled ps-0" id="blog_sidebar_id">
-            <li class="mb-1">
-                <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed" data-bs-toggle="collapse" data-bs-target="#home-collapse" aria-expanded="true">
-                Home
-                </button>
-                <div class="collapse show" id="home-collapse">
-                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="#" class="nav_link link-dark d-inline-flex text-decoration-none rounded">Overview</a></li>
-                    <li><a href="#" class="nav_link link-dark d-inline-flex text-decoration-none rounded">Updates</a></li>
-                    <li><a href="#" class="nav_link link-dark d-inline-flex text-decoration-none rounded">Reports</a></li>
-                </ul>
-                </div>
-            </li>
             <li class="mb-1">
                 <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed" data-bs-toggle="collapse" data-bs-target="#dashboard-collapse" aria-expanded="false">
                 LLM depoly and finetune
@@ -155,8 +143,8 @@
 
     </div> -->
 
-    <script src="../static/js/bootstrap.bundle.5.2.3.min.js"></script>
-    <script src="../static/js/sidebars.js"></script>
+    <script src="/static/js/bootstrap.bundle.5.2.3.min.js"></script>
+    <script src="/static/js/sidebars.js"></script>
     <script>  // 绑定点击事件，动态加载 HTML
     document.querySelectorAll('#blog_sidebar_id a.nav_link').forEach(link => {
         link.addEventListener('click', function(e) {

@@ -107,10 +107,20 @@ pip install modelscope==1.32.0
         <pre class="mb-0"><code class="language-bash">
 pip install accelerate==1.11.0 
 pip install triton==3.4.0
+pip install asyncio==4.0.0
         </code></pre>
-    <div class="alert alert-danger" role="alert">
-        Windows用户无法下载<code>triton</code>
+        <div class="alert alert-danger" role="alert">
+            Windows用户无法下载<code>triton</code>
+        </div>
     </div>
+    <p>
+        注意检查transformers的版本，我们测试中使用4.57.3
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+pip install transformers==4.57.3
+        </code></pre>
     </div>
 
     <h1 id="install_model" class="lh-sm">下载大模型</h1>
@@ -325,8 +335,75 @@ content: A large language model (LLM) is an AI system designed to understand and
     <!-- 使用vllm背景运行大模型的命令 -->
     <div class="position-relative border rounded p-3 bg-light">
         <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
-        <pre class="mb-0"><code class="language-json">
-            
+        <div class="alert alert-warning" role="alert">
+            仅Linux用户可用此处代码
+        </div>
+        <pre class="mb-0"><code class="language-bash">
+python -m vllm.entrypoints.openai.api_server \
+    --model 大模型的绝对路径 \
+    --dtype auto \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max_num_batched_tokens 8192 \
+    --max_num_seqs 16 \
+    --gpu-memory-utilization 0.6 \
+    --enable_chunked_prefill \
+    --async_scheduling \
+        </code></pre>
+        <div class="alert alert-info" role="alert">
+            model是大模型的绝对路径。host和port就是监听的ip和端口。max-model-len是大模型输入+输出最长的token。如果输入+输出超过了这么多，就会直接截断。
+            gpu-memory-utilization是占用多少百分比的显存，示例中使用60%的显存。
+        </div>
+    </div>
+    <p>
+        这个命令运行起来比较慢，一般需要几分钟，需要看日志，自行判断是否启动成功。启动之后就可以使用openai的通用接口发送请求，启动之后，就可以发送请求了。
+        由于一般都会有异步请求，所以我们这里使用<code>asyncio</code>包做异步通信示例。
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+import asyncio
+import time
+from datetime import datetime
+from openai import AsyncOpenAI
+
+# 初始化异步客户端
+client = AsyncOpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="token_anything"
+)
+
+model = "/home/zhusq/.cache/modelscope/hub/models/Qwen/Qwen3-32B-AWQ"
+prompt = "<|disable_thought|>随机生成100个字"
+
+async def single_request(idx: int):
+    start = time.perf_counter()
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=False,  # 关闭流式
+            timeout=120.0
+        )
+        content = response.choices[0].message.content
+        elapsed = time.perf_counter() - start
+        print(f"[{idx}] Done in {elapsed:.2f}s")
+        return content
+    except Exception as e:
+        print(f"[{idx}] Error: {e}")
+        return None
+
+async def main():
+    print("Start:", datetime.now())
+    tasks = [single_request(i) for i in range(20)]
+    results = await asyncio.gather(*tasks)
+    print("End:", datetime.now())
+    print(results)
+    print(f"Completed {len([r for r in results if r is not None])}/20 requests")
+
+if __name__ == "__main__":
+    asyncio.run(main())
         </code></pre>
     </div>
 

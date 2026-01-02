@@ -335,9 +335,6 @@ content: A large language model (LLM) is an AI system designed to understand and
     <!-- 使用vllm背景运行大模型的命令 -->
     <div class="position-relative border rounded p-3 bg-light">
         <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
-        <div class="alert alert-warning" role="alert">
-            仅Linux用户可用此处代码
-        </div>
         <pre class="mb-0"><code class="language-bash">
 python -m vllm.entrypoints.openai.api_server \
     --model 大模型的绝对路径 \
@@ -351,6 +348,9 @@ python -m vllm.entrypoints.openai.api_server \
     --enable_chunked_prefill \
     --async_scheduling \
         </code></pre>
+        <div class="alert alert-warning" role="alert">
+            仅Linux用户可用此处代码
+        </div>
         <div class="alert alert-info" role="alert">
             model是大模型的绝对路径。host和port就是监听的ip和端口。max-model-len是大模型输入+输出最长的token。如果输入+输出超过了这么多，就会直接截断。
             gpu-memory-utilization是占用多少百分比的显存，示例中使用60%的显存。
@@ -374,8 +374,8 @@ client = AsyncOpenAI(
     api_key="token_anything"
 )
 
-model = "/home/zhusq/.cache/modelscope/hub/models/Qwen/Qwen3-32B-AWQ"
-prompt = "<|disable_thought|>随机生成100个字"
+model = "大模型的绝对路径"
+prompt = "<|disable_thought|>随机生成100个字"  # disable_thought是禁用思考
 
 async def single_request(idx: int):
     start = time.perf_counter()
@@ -406,6 +406,44 @@ if __name__ == "__main__":
     asyncio.run(main())
         </code></pre>
     </div>
+    <p>
+        上面的代码会等待计算完成之后输出结果，而不是流式输出，如果需要流式输入，可以参考下面代码，由于我这边使用示例极小，也没有长文本产生需求，所以没有做异步的流式产生，如果你有需求，需要自己动手了。
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+import openai
+import requests
+import json
+from datetime import datetime
+
+client = openai.OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="token-anything"
+)
+
+stream = client.chat.completions.create(
+    model="大模型的绝对路径",
+    messages=[
+        {
+        "role": "user",
+        "content": "<|disable_thought|>介绍注意力机制"  # disable_thought是禁用思考
+        }
+    ],
+    stream=True
+)
+print("start: ", datetime.now())
+
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+
+print("end: ", datetime.now())
+        </code></pre>
+    </div>
+    <p>
+        目前为止，大模型部署和简单使用都已经完成了。希望这个文档能帮助到你。
+    </p>
 
 
     <!-- icon的按钮 -->

@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>本地视觉-语言大模型部署和使用</title>
+    <style>
+        /* 固定右下角按钮 */
+        #liveToastBtn {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 2rem;
+        cursor: pointer;
+        z-index: 1055; /* 高于 toast 默认 z-index */
+        border: none;
+        background: none;
+        color: #0d6efd; /* Bootstrap primary color */
+        }
+    </style>
+  </head>
+  <body>
+    <h1 id="blog_title" class="lh-lg">
+        怎么部署本地大模型
+    </h1>
+    本文基于通义千问3-0.6B大模型，但是在8B，14B和32B大模型中都测试通过。
+    <h1 id="setup_env" class="lh-lg">
+        环境配置
+    </h1>
+    <h2 id="create_conda" class="lh-sm">创建conda环境</h2>
+    <p>
+        首先，创建conda环境，使用<code>python=3.10.19</code>
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-cmd">
+conda create -n qwen3_06B python=3.10.19 -y
+conda activate qwen3_06B
+        </code></pre>
+    </div>
+
+
+    <h2 id="install_torch">安装Pytorch</h2>
+    <p>
+        在实验中，我们使用pytorch2.8，需要注意你的系统版本是否太老旧，没有办法使用这个pytorch的版本。
+    </p>
+    <!-- 安装pytorch的命令 -->
+    <p>
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#LinuxWindows_cmd" aria-expanded="false" aria-controls="LinuxWindows_cmd">
+            Linux&Windows安装命令
+        </button>
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#Mac_cmd" aria-expanded="false" aria-controls="Mac_cmd">
+            MacOS安装命令
+        </button>
+    </p>
+
+    <div class="collapse show" id="LinuxWindows_cmd">
+        <div class="card card-body">
+            <div class="position-relative border rounded p-3 bg-light">
+                <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                <pre class="mb-0"><code class="language-cmd">
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu129
+                </code></pre>
+            </div>
+        </div>
+    </div>
+    <div class="collapse" id="Mac_cmd">
+        <div class="card card-body">
+            <div class="position-relative border rounded p-3 bg-light">
+                <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                <pre class="mb-0"><code class="language-cmd">
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0
+                </code></pre>
+            </div>
+        </div>
+    </div>
+
+    <h2 id="install_vllm" class="lh-sm">安装vllm</h2>
+    <div class="alert alert-danger" role="alert">
+        Windows用户无法使用vllm，但是可以继续往后看，可以单独使用大模型推理，只是不能使用vllm的功能。
+    </div>
+    vllm是一个大模型推理的服务库。安装使用命令：
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-cmd">
+pip install vllm==0.11.0
+        </code></pre>
+    </div>
+
+    <h2 id="install_modelscope" class="lh-sm">下载Modelscope</h2>
+    <p>
+        ModelScpde是阿里巴巴公司推出的大模型开放平台。使用下面命令安装:
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-cmd">
+pip install modelscope==1.32.0
+        </code></pre>
+    </div>
+
+    <h2 id="install_others" class="lh-sm">下载其他包</h2>
+    <p>
+        还需要下载一些其他的包：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+pip install accelerate==1.11.0 
+pip install triton==3.4.0
+pip install asyncio==4.0.0
+        </code></pre>
+        <div class="alert alert-danger" role="alert">
+            Windows用户无法下载<code>triton</code>
+        </div>
+    </div>
+    <p>
+        注意检查transformers的版本，我们测试中使用4.57.3
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+pip install transformers==4.57.3
+        </code></pre>
+    </div>
+
+    <h1 id="install_model" class="lh-sm">下载大模型</h1>
+    <h2 id="check_file" class="lh-sm">检查所有可用的模型文件</h2>
+    <p>
+        这个是官方网页的模型库的连接: 
+        <a href="https://www.modelscope.cn/models" class="link-info" target="_blank">魔塔模型库</a>
+    </p>
+    <p>
+        可以搜索，拿到搜索结果。
+        但是它有一个问题，有时候你需要搜索<code>通义千问3</code>，有时候却需要搜索<code>Qwen3</code>。
+    </p>
+
+    <div id="Qwen3_search_res" class="carousel slide" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#Qwen3_search_res" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#Qwen3_search_res" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <!-- 通义千问搜索结果 -->
+            <div class="carousel-item active">
+                <img src="/static/img/blog/LLM_deploy_and_ft/1_llm_deploy/search_res_zh.png" class="d-block w-100" alt="使用中文通义千问的搜索结果">
+                <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">使用中文通义千问的搜索结果</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="/static/img/blog/LLM_deploy_and_ft/1_llm_deploy/search_res_en.png" class="d-block w-100" alt="使用英文Qwen3的搜索结果">
+                <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">使用英文Qwen3的搜索结果</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#Qwen3_search_res" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#Qwen3_search_res" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+
+    <h2 id="install_model_file" class="lh-sm">下载想要的模型</h2>
+    <p>
+        首先，我们在搜索界面，找到想要安装的大模型，点到详情页，复制下载名字：
+    </p>
+    <div id="Qwen3_detail_page" class="carousel slide" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#Qwen3_detail_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/LLM_deploy_and_ft/1_llm_deploy/detail_name.png" class="d-block w-100" alt="使用中文通义千问的搜索结果">
+                <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">黄色标记了需要复制的名字</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#Qwen3_detail_page" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#Qwen3_detail_page" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+    <p>
+        在我们激活的环境下，使用下面命令下载模型：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-cmd">
+modelscope download --model Qwen/Qwen3-0.6B --local_dir PATH
+        </code></pre>
+    </div>
+    <p>
+        简易理解下，我们可以认为NB的模型需要2N的显存，如8B的模型需要16G的显存。具体下载多少B的模型，请根据自己的本地显存大小和算力选择。<code>--local_dir</code>手动指定下载的路径，不手动指定也可以，会有一个默认的路径。
+    </p>
+
+    <h1 id="load_and_use" class="lh-lg">
+        加载并使用大模型
+    </h1>
+    <h2 id="construct_msg" class="lh-sm">构造消息</h2>
+    <p>
+        每一个发送的消息都应该类似于：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-json">
+messages = [
+    {"role": "user", "content": "需要询问大模型的内容。"}
+]
+        </code></pre>
+    </div>
+    <div class="alert alert-warning" role="alert">
+        role必须是user，不可以写成其他内容。content必须是纯字符串，如果输入是json也需要使用<code>json.dumps</code>转为字符串。
+    </div>
+    <h2 id="use" class="lh-sm">使用大模型</h2>
+    <p>
+        在模型详情页，往下翻，有一个官方的代码，
+    </p>
+    <!-- 展示代码 -->
+    <div class="accordion" id="show_codes_code">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="official_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#official_code" aria-expanded="true" aria-controls="official_code">
+                    官方代码
+                </button>
+            </h2>
+            <div id="official_code" class="accordion-collapse collapse show" aria-labelledby="official_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-python">
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+model_name = "Qwen/Qwen3-0.6B"
+# load the tokenizer and the model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+# prepare the model input
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+# conduct text completion
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
+# parsing thinking content
+try:
+    # rindex finding 151668 (</think>)
+    index = len(output_ids) - output_ids[::-1].index(151668)
+except ValueError:
+    index = 0
+thinking_content = tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
+content = tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+print("thinking content:", thinking_content)
+print("content:", content)
+                        </code></pre>
+    <div class="alert alert-warning" role="alert">
+        如果你没有修改模型下载路径，那么model_name就是你复制的那个名字，否则就是你的下载路径（绝对路径或者相对路径）
+    </div>
+    <div class="alert alert-warning" role="alert">
+        Mac的M系列芯片用户，你需要删除<code>device_map="auto"</code>
+    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="code_output_head">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#code_output" aria-expanded="false" aria-controls="code_output">
+                    代码的输出
+                </button>
+            </h2>
+            <div id="code_output" class="accordion-collapse collapse" aria-labelledby="code_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-python">
+Downloading Model from https://www.modelscope.cn to directory: /Users/chuckiezhu/.cache/modelscope/hub/models/Qwen/Qwen3-0.6B
+2026-01-01 21:06:43,426 - modelscope - INFO - Target directory already exists, skipping creation.
+Downloading Model from https://www.modelscope.cn to directory: /Users/chuckiezhu/.cache/modelscope/hub/models/Qwen/Qwen3-0.6B
+2026-01-01 21:06:44,920 - modelscope - INFO - Target directory already exists, skipping creation.
+Loading weights: 100%|████████████████████████████████████████████████████| 311/311 [00:00<00:00, 3749.56it/s, Materializing param=model.norm.weight]
+The tied weights mapping and config for this model specifies to tie model.embed_tokens.weight to lm_head.weight, but both are present in the checkpoints, so we will NOT tie them. You should update the config with `tie_word_embeddings=False` to silence this warning
+thinking content: Okay, the user wants a short introduction to a large language model. Let me start by recalling what I know. Large language models are AI systems designed to understand and generate human language, right? They can process text, answer questions, and even create creative content.
+
+I should mention their core function first. Maybe something like understanding and generating human language. Then, highlight their capabilities: understanding and generating text, answering questions, creating content. Also, mention the training data they use. Oh, and their use cases—like customer service, content creation, etc. 
+
+Wait, should I include anything about how they work? Like the neural network structure? But the user asked for a short introduction, so maybe keep it concise. Avoid technical jargon. Keep it simple and engaging. Make sure to cover the key points without getting too detailed. Let me check if I missed anything. The user might be a student or someone new to AI, so clarity is important. Alright, that should work.
+content: A large language model (LLM) is an AI system designed to understand and generate human language. It can comprehend text, answer questions, and create creative content. These models are trained on vast datasets to learn patterns and improve performance in various tasks, making them useful for tasks like customer service, content creation, and language translation.
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- <div class="accordion-item">
+            <h2 class="accordion-header" id="panelsStayOpen-headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
+                Accordion Item #3
+                </button>
+            </h2>
+            <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
+                <div class="accordion-body">
+                <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+                </div>
+            </div>
+        </div> -->
+    </div>
+
+    <h2 id="vllm_use" class="lh-sm">vllm+qwen3使用</h2>
+    <p>
+        首先使用vllm将大模型背景运行，使用命令：
+    </p>
+    <!-- 使用vllm背景运行大模型的命令 -->
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+python -m vllm.entrypoints.openai.api_server \
+    --model 大模型的绝对路径 \
+    --dtype auto \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max_num_batched_tokens 8192 \
+    --max_num_seqs 16 \
+    --gpu-memory-utilization 0.6 \
+    --enable_chunked_prefill \
+    --async_scheduling \
+        </code></pre>
+        <div class="alert alert-warning" role="alert">
+            仅Linux用户可用此处代码
+        </div>
+        <div class="alert alert-info" role="alert">
+            model是大模型的绝对路径。host和port就是监听的ip和端口。max-model-len是大模型输入+输出最长的token。如果输入+输出超过了这么多，就会直接截断。
+            gpu-memory-utilization是占用多少百分比的显存，示例中使用60%的显存。
+        </div>
+    </div>
+    <p>
+        这个命令运行起来比较慢，一般需要几分钟，需要看日志，自行判断是否启动成功。启动之后就可以使用openai的通用接口发送请求，启动之后，就可以发送请求了。
+        由于一般都会有异步请求，所以我们这里使用<code>asyncio</code>包做异步通信示例。
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+import asyncio
+import time
+from datetime import datetime
+from openai import AsyncOpenAI
+
+# 初始化异步客户端
+client = AsyncOpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="token_anything"
+)
+
+model = "大模型的绝对路径"
+prompt = "<|disable_thought|>随机生成100个字"  # disable_thought是禁用思考
+
+async def single_request(idx: int):
+    start = time.perf_counter()
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=False,  # 关闭流式
+            timeout=120.0
+        )
+        content = response.choices[0].message.content
+        elapsed = time.perf_counter() - start
+        print(f"[{idx}] Done in {elapsed:.2f}s")
+        return content
+    except Exception as e:
+        print(f"[{idx}] Error: {e}")
+        return None
+
+async def main():
+    print("Start:", datetime.now())
+    tasks = [single_request(i) for i in range(20)]
+    results = await asyncio.gather(*tasks)
+    print("End:", datetime.now())
+    print(results)
+    print(f"Completed {len([r for r in results if r is not None])}/20 requests")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+        </code></pre>
+    </div>
+    <p>
+        上面的代码会等待计算完成之后输出结果，而不是流式输出，如果需要流式输入，可以参考下面代码，由于我这边使用示例极小，也没有长文本产生需求，所以没有做异步的流式产生，如果你有需求，需要自己动手了。
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+import openai
+import requests
+import json
+from datetime import datetime
+
+client = openai.OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="token-anything"
+)
+
+stream = client.chat.completions.create(
+    model="大模型的绝对路径",
+    messages=[
+        {
+        "role": "user",
+        "content": "<|disable_thought|>介绍注意力机制"  # disable_thought是禁用思考
+        }
+    ],
+    stream=True
+)
+print("start: ", datetime.now())
+
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+
+print("end: ", datetime.now())
+        </code></pre>
+    </div>
+    <p>
+        目前为止，大模型部署和简单使用都已经完成了。希望这个文档能帮助到你。
+    </p>
+
+
+    <!-- icon的按钮 -->
+    <button type="button" class="btn btn-primary" id="liveToastBtn"><i class="bi bi-card-list"></i></button>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+        <!-- <img src="https://via.placeholder.com/20" class="rounded me-2" alt="..."> -->
+        <strong class="me-auto">contents</strong>
+        <!-- <small>11 mins ago</small> -->
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <nav id="navbar-example3" class="h-100 flex-column align-items-stretch pe-4 border-end">
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link" href="#blog_title">本地大模型部署</a>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#setup_env">环境配置</a>
+                        <a class="nav-link ms-3 my-1" href="#create_conda">创建conda环境</a>
+                        <a class="nav-link ms-3 my-1" href="#install_torch">安装Pytorch</a>
+                        <a class="nav-link ms-3 my-1" href="#install_vllm">安装vllm</a>
+                        <a class="nav-link ms-3 my-1" href="#install_modelscope">安装Modelscope</a>
+                        <a class="nav-link ms-3 my-1" href="#install_others">下载其他包</a>
+                    </nav>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#install_model">下载大模型</a>
+                        <a class="nav-link ms-3 my-1" href="#check_file">检查所有可用的模型文件</a>
+                        <a class="nav-link ms-3 my-1" href="#install_model_file">下载想要的模型</a>
+                    </nav>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#load_and_use">加载并使用大模型</a>
+                        <a class="nav-link ms-3 my-1" href="#construct_msg">构造消息</a>
+                        <a class="nav-link ms-3 my-1" href="#use">使用大模型</a>
+                    </nav>
+                    <!-- <a class="nav-link" href="#item-3">Item 3</a>
+                    <nav class="nav nav-pills flex-column">
+                    <a class="nav-link ms-3 my-1" href="#item-3-1">Item 3-1</a>
+                    <a class="nav-link ms-3 my-1" href="#item-3-2">Item 3-2</a>
+                    </nav> -->
+                </nav>
+            </nav>
+        </div>
+    </div>
+    </div>
+
+
+    <!-- <div aria-live="polite" aria-atomic="true" class="position-fixed bd-example-toasts bottom-0 end-0 p-3"> -->
+        <!-- <div class="toast-container p-3" id="menu_toast"> -->
+            <!-- <div class="toast" id="menu_toast"> -->
+            <!-- <div class="toast-header"> -->
+                <!-- <img src="..." class="rounded me-2" alt="..."> -->
+                <!-- <strong class="me-auto">Bootstrap</strong> -->
+                <!-- <small>11 mins ago</small> -->
+                <!-- <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button> -->
+            <!-- </div> -->
+            <!-- <div class="toast-body"> -->
+                <!-- Hello, world! This is a toast message. -->
+                <!-- 在toast的body里面，放一个scrollspy目录 -->
+
+            <!-- </div> -->
+            <!-- </div> -->
+        <!-- </div> -->
+    <!-- </div> -->
+
+    <script>
+        const toastBtn = document.getElementById('liveToastBtn');
+        toastBtn.addEventListener('click', () => {
+            const toastEl = document.getElementById('liveToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        });
+
+        // 一键复制
+        document.querySelectorAll(".copy-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const code = btn.nextElementSibling.textContent;
+
+            navigator.clipboard.writeText(code).then(() => {
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            btn.classList.replace("btn-outline-secondary", "btn-success");
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-copy"></i>';
+                btn.classList.replace("btn-success", "btn-outline-secondary");
+            }, 1200);
+            });
+        });
+        });
+
+    </script>
+
+    <!-- icon图标，这个不知道为什么，放本地就报错 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <script src="/static/js/bootstrap.bundle.5.2.3.min.js" crossorigin="anonymous"></script>
+    <link href="/static/css/bootstrap_5.2.3.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="/static/js/popper.min.js" crossorigin="anonymous"></script>
+
+  </body>
+</html>

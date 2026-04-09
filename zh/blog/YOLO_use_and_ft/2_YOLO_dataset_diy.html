@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>YOLO模型使用教程</title>
+    <style>
+        /* 固定右下角按钮 */
+        #liveToastBtn {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 2rem;
+        cursor: pointer;
+        z-index: 1055; /* 高于 toast 默认 z-index */
+        border: none;
+        background: none;
+        color: #0d6efd; /* Bootstrap primary color */
+        }
+    </style>
+  </head>
+  <body>
+
+    <h1 id="blog_title" class="lh-lg">
+        YOLO数据集制作和微调
+    </h1>
+    <p>
+        我们选择的工具是：
+        <a href="https://github.com/wkentaro/labelme" class="link-info" target="_blank">LabelMe</a>
+    </p>
+
+    <h1 id="setup_env" class="lh-lg">
+        环境配置
+    </h1>
+
+    <h2 id="create_conda" class="lh-sm">创建conda环境</h2>
+    <div class="alert alert-info" role="alert">
+        你可以直接在YOLO的环境中安装，那样的话，可以跳过这个小章节。
+    </div>
+    <p>
+        首先，创建conda环境，使用<code>python=3.9.12</code>
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+conda create -n labelme python=3.9.12 -y
+conda activate labelme
+        </code></pre>
+    </div>
+
+    <h2 id="install_labelme">安装LabelMe</h2>
+    <p>
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#install_exe" aria-expanded="false" aria-controls="install_exe">
+            直接安装应用程序
+        </button>
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#pip_install_div" aria-expanded="false" aria-controls="pip_install_div">
+            使用pip下载
+        </button>
+    </p>
+
+    <div class="collapse show" id="install_exe">
+        <div class="card card-body">
+            <div class="position-relative border rounded p-3 bg-light">
+                <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                <pre class="mb-0"><code class="language-bash">
+在这里下载应用程序:
+<a href="https://labelme.io/docs/install-labelme-app" class="link-info" target="_blank">LabelMe应用程序</a>
+                </code></pre>
+            </div>
+        </div>
+    </div>
+    <div class="collapse" id="pip_install_div">
+        <div class="card card-body">
+            <div class="position-relative border rounded p-3 bg-light">
+                <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                <pre class="mb-0"><code class="language-bash">
+pip install labelme
+                </code></pre>
+            </div>
+        </div>
+    </div>
+    <p>
+        安装了之后，在conda环境中，直接执行命令，即可打开界面，界面如下图所示：
+    </p>
+    <div id="labelme_main_page" class="carousel slide w-75" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelme_main_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/labelme_main_page.png" class="d-block w-100" alt="labelme的主页">
+                <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">labelme主页</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#labelme_main_page" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#labelme_main_page" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+
+    <h1 id="make_dataset">标注数据</h1>
+
+    <h2 id="setup_before_use">使用前配置</h2>
+    <p>
+        我测试使用的是pip安装的label，启动时会提示使用的配置文件路径，如:
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-bash">
+2026-04-08 16:31:27.629 | INFO     | labelme.__main__:main:189 - Starting Labelme 5.10.1
+2026-04-08 16:31:27.645 | INFO     | labelme.config:get_config:85 - Loading config file from: C:\Users\26775\.labelmerc
+2026-04-08 16:31:27.890 | DEBUG    | labelme.widgets.canvas:set_ai_model_name:168 - Setting AI model to 'sam2:latest'
+        </code></pre>
+    </div>
+    <p>
+        中可以看到路径，打开这个文件，修改这个值：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+store_data: false
+        </code></pre>
+    </div>
+    <p>
+        如果不修改，它会把图片的数据放入json中，会很大，并且这个bug好像一直未修复，需要手动去配置文件中修改，仅仅在界面中修改的话，只能当次有效。
+    </p>
+
+    <h2 id="prepare_imgs">准备图像</h2>
+    <p>
+        在某一个文件夹中，放入用于微调的数据集。这里为了示例，我们只拿了10张CARLA环境的图像作为测试。
+    </p>
+    <div id="labelme_main_page" class="carousel slide w-75" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelme_main_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/imgs_dir.png" class="d-block w-100" alt="图像目录">
+                <!-- <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">labelme主页</p>
+                </div> -->
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#labelme_main_page" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#labelme_main_page" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+    <p>
+        然后在左上角设置图像输出路径：
+    </p>
+    <div id="labelme_main_page" class="carousel slide w-25" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelme_main_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/setup_output_dir.PNG" class="d-block w-100" alt="图像目录">
+                <!-- <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">labelme主页</p>
+                </div> -->
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#labelme_main_page" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#labelme_main_page" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+    <p>
+        为了方便起见，我设置了原图像目录。
+    </p>
+    
+    <h2 id="label_imgs">标注数据</h2>
+    <p>
+        首先打开图像目录：
+    </p>
+    <div id="labelme_main_page" class="carousel slide w-75" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelme_main_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/open_imgs_dir.png" class="d-block w-100" alt="图像目录">
+                <!-- <div class="carousel-caption d-none d-md-block">
+                    <p class="text-info fs-1">labelme主页</p>
+                </div> -->
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#labelme_main_page" data-bs-slide="prev">
+            <i class="bi bi-chevron-left fs-2 text-primary"></i>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#labelme_main_page" data-bs-slide="next">
+            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+        </button>
+    </div>
+
+    <p>
+        然后这个软件就会遍历文件夹内部图像，我们只需要挨个标记即可，因为我们这里使用的是yoloseg模型，所以我们只需要使用左边的创建多边形即可。
+        中途即使退出软件，下次打开的时候，也会加载已经标注的所有内容。
+    </p>
+    <p>
+        假设我们只需要检测道路、行人和其他车辆，下面几个是示例：
+    </p>
+    <div id="labelmeexample" class="carousel slide w-100" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelmeexample" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#labelmeexample" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            <button type="button" data-bs-target="#labelmeexample" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/dataset_example_1.png" class="d-block w-100" alt="...">
+            </div>
+            <div class="carousel-item">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/dataset_example_2.png" class="d-block w-100" alt="...">
+            </div>
+            <div class="carousel-item">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/dataset_example_3.png" class="d-block w-100" alt="...">
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#labelmeexample" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#labelmeexample" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+    <p>
+        标注完之后，关闭软件即可。
+    </p>
+
+    <h2 id="trans_imgs">转换数据</h2>
+    <p>
+        现在我们得到了一个带有通用标注json文件的数据集，现在需要转化为YOLO可识别的模式（COCO数据集格式）。
+    </p>
+    <p>
+        我们选择的数据转换工具是：
+<a href="https://github.com/KdaiP/labelme2YoloV8-segment" class="link-info" target="_blank">LabelMe2YoloV8-segment转换工具</a>
+    </p>
+    <p>
+        下载了这个工具之后，这样运行(使用<a href="/zh/blog/YOLO_use_and_ft/1_YOLO_install.html" class="link-info">上一章节</a>创建的conda环境即可)：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+python .\convert_folder.py E:\ttttt\imgs E:\ttttt\dataset 0.7
+        </code></pre>
+    </div>
+    <div class="accordion" id="trans_code_output_div">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="trans_code_output_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trans_code_output" aria-expanded="true" aria-controls="trans_code_output">
+                    转换程序输出
+                </button>
+            </h2>
+            <div id="trans_code_output" class="accordion-collapse collapse show" aria-labelledby="trans_code_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <pre class="mb-0"><code class="language-bash">
+yaml created in E:/ttttt/dataset/yolo.yaml
+100%|███████████████████████████████████████████████████████████████████████████████████| 7/7 [00:00<00:00, 655.90it/s]
+100%|███████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 579.06it/s]
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p>
+        输出中提示的yaml文件就是训练需要的yaml文件，里面写了训练所需的所有信息:
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-yaml">
+path: E:/ttttt/dataset
+train: images/train
+val: images/val
+names:
+  0: car
+  1: people
+  2: road
+        </code></pre>
+    </div>
+    <div class="alert alert-info" role="alert">
+        其中的<code>path</code>是指这个数据集所在的根目录，如果你需要移动数据集，请修改这个值。
+    </div>
+
+    <h1 id="ft">
+        微调模型
+    </h1>
+    <p>
+        使用下面的代码进行微调训练：
+    </p>
+    <div class="position-relative border rounded p-3 bg-light">
+        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+        <pre class="mb-0"><code class="language-python">
+from ultralytics import YOLO
+
+# 加载预训练模型
+model = YOLO("yolo26m-seg.pt")
+# 训练模型，当然，你不加载预训练模型也没事
+results = model.train(data="你的yaml路径，记得修改yaml中的path", epochs=20, imgsz=640)
+        </code></pre>
+    </div>
+    <p>
+        虽然代码中没有保存，但是运行微调时，会自动保存最后一个和最好的那一个。
+    </p>
+    <div id="labelme_main_page" class="carousel slide w-75" data-bs-ride="false">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#labelme_main_page" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <!-- <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button> -->
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="/static/img/blog/YOLO_use_and_ft/2_dataset_diy/fted_img.jpg" class="d-block w-100" alt="图像目录">
+            </div>
+        </div>
+    </div>
+    <h1 id="end">
+        结束了
+    </h1>
+    <p>
+        恭喜你学会了怎么微调YOLO模型。
+    </p>
+
+
+
+
+    <!-- icon的按钮 -->
+    <button type="button" class="btn btn-primary" id="liveToastBtn"><i class="bi bi-card-list"></i></button>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+        <!-- <img src="https://via.placeholder.com/20" class="rounded me-2" alt="..."> -->
+        <strong class="me-auto">contents</strong>
+        <!-- <small>11 mins ago</small> -->
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <nav id="navbar-example3" class="h-100 flex-column align-items-stretch pe-4 border-end">
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link" href="#blog_title">YOLO数据集制作和微调</a>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#setup_env">环境配置</a>
+                        <a class="nav-link ms-3 my-1" href="#create_conda">创建conda环境</a>
+                        <a class="nav-link ms-3 my-1" href="#install_labelme">安装LabelMe</a>
+                    </nav>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#make_dataset">标注数据</a>
+                        <a class="nav-link ms-3 my-1" href="#setup_before_use">使用前配置</a>
+                        <a class="nav-link ms-3 my-1" href="#prepare_imgs">准备图像</a>
+                        <a class="nav-link ms-3 my-1" href="#label_imgs">标注数据</a>
+                        <a class="nav-link ms-3 my-1" href="#trans_imgs">转换数据</a>
+                    </nav>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#ft">微调模型</a>
+                        <a class="nav-link ms-3 my-1" href="#setup_before_use">使用前配置</a>
+                        <a class="nav-link ms-3 my-1" href="#prepare_imgs">准备图像</a>
+                        <a class="nav-link ms-3 my-1" href="#label_imgs">标注数据</a>
+                        <a class="nav-link ms-3 my-1" href="#trans_imgs">转换数据</a>
+                    </nav>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#end">结束了</a>
+                    </nav>
+                    <!-- <a class="nav-link" href="#item-3">Item 3</a>
+                    <nav class="nav nav-pills flex-column">
+                    <a class="nav-link ms-3 my-1" href="#item-3-1">Item 3-1</a>
+                    <a class="nav-link ms-3 my-1" href="#item-3-2">Item 3-2</a>
+                    </nav> -->
+                </nav>
+            </nav>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        const toastBtn = document.getElementById('liveToastBtn');
+        toastBtn.addEventListener('click', () => {
+            const toastEl = document.getElementById('liveToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        });
+
+        // 一键复制
+        document.querySelectorAll(".copy-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const code = btn.nextElementSibling.textContent;
+
+            navigator.clipboard.writeText(code).then(() => {
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            btn.classList.replace("btn-outline-secondary", "btn-success");
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-copy"></i>';
+                btn.classList.replace("btn-success", "btn-outline-secondary");
+            }, 1200);
+            });
+        });
+        });
+
+    </script>
+
+    <!-- icon图标，这个不知道为什么，放本地就报错 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <!-- <link rel="stylesheet" href="/static/css/bootstrap-icons.css" rel="stylesheet" crossorigin="anonymous"> -->
+    <script src="/static/js/bootstrap.bundle.5.2.3.min.js" crossorigin="anonymous"></script>
+    <link href="/static/css/bootstrap_5.2.3.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="/static/js/popper.min.js" crossorigin="anonymous"></script>
+
+  </body>
+</html>

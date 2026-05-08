@@ -23,18 +23,21 @@
     <h1 id="blog_title" class="lh-lg">
         怎么部署本地大模型
     </h1>
+    <div class="alert alert-danger" role="alert">
+        强烈建议使用Linux系统。并且不能使用太旧的显卡。
+    </div>
     本文基于通义千问3-0.6B大模型，但是在8B，14B和32B大模型中都测试通过。
     <h1 id="setup_env" class="lh-lg">
         环境配置
     </h1>
     <h2 id="create_conda" class="lh-sm">创建conda环境</h2>
     <p>
-        首先，创建conda环境，使用<code>python=3.10.19</code>
+        首先，创建conda环境，使用<code>python=3.10</code>
     </p>
     <div class="position-relative border rounded p-3 bg-light">
         <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
         <pre class="mb-0"><code class="language-cmd">
-conda create -n qwen3_06B python=3.10.19 -y
+conda create -n qwen3_06B python=3.10 -y
 conda activate qwen3_06B
         </code></pre>
     </div>
@@ -195,6 +198,12 @@ pip install transformers==4.57.3
         <pre class="mb-0"><code class="language-cmd">
 modelscope download --model Qwen/Qwen3-0.6B --local_dir PATH
         </code></pre>
+        <div class="alert alert-warning" role="alert">
+            有可能会报错找不到pkg_sources包，因为太新的pkg改了导入方式，下面的命令可以解决:
+            <pre class="mb-0"><code class="language-cmd">
+pip install setuptools==81.0.0
+            </code></pre>
+        </div>
     </div>
     <p>
         简易理解下，我们可以认为NB的模型需要2N的显存，如8B的模型需要16G的显存。具体下载多少B的模型，请根据自己的本地显存大小和算力选择。<code>--local_dir</code>手动指定下载的路径，不手动指定也可以，会有一个默认的路径。

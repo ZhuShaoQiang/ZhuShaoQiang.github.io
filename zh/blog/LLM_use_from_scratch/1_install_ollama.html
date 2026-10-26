@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>安装ollama并初步使用</title>
+    <style>
+        /* 固定右下角按钮 */
+        #liveToastBtn {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 2rem;
+        cursor: pointer;
+        z-index: 1055; /* 高于 toast 默认 z-index */
+        border: none;
+        background: none;
+        color: #0d6efd; /* Bootstrap primary color */
+        }
+    </style>
+  </head>
+  <body>
+    <h1 id="blog_title" class="lh-lg">
+        安装ollama
+    </h1>
+    <div class="alert alert-danger" role="alert">
+本教程测试机器是windows10 64位 amd架构 + 1080ti + NVIDIA STUDIO 581驱动版本
+    </div>
+    最近搞了一台1080ti显卡的机器，准备从0学习大模型的各种内容，如skill/rag等，这里用来记录遇到的一些问题。
+
+    <h1 id="setup_env" class="lh-lg">
+        环境配置
+    </h1>
+
+    <h2 id="confirm_env" class="lh-sm">确定安装环境</h2>
+
+    <p>
+        在安装之前，应该确认一下自己的显卡驱动的版本和ollama是否适配。比如我这个电脑比较老旧，1080ti的显卡，在使用0.33版本的ollama的时候，要求显卡驱动要达到570的版本，否则无法使用。
+    </p>
+
+    <h2 id="install_ollama" class="lh-sm">安装ollama</h2>
+
+    <p>
+        ollama的官网下载地址是: <a href="https://github.com/ollama/ollama" target="_blank">ollama的github下载地址</a>。
+    </p>
+
+    <p>
+        下载之后就双击安装就行。
+    </p>
+
+    <h2 id="pull_models" class="lh-sm">拉取大模型</h2>
+
+    <p>
+        安装完成之后，关闭命令行重新打开，这样可以重新载入环境变量，然后执行下面的命令，确认能找到ollama:
+    </p>
+
+    <div class="accordion">
+        <!-- ollama version的块 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="ollama_version_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ollama_version_code" aria-expanded="true" aria-controls="ollama_version_code">
+                    查看ollama版本
+                </button>
+            </h2>
+            <div id="ollama_version_code" class="accordion-collapse collapse show" aria-labelledby="official_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+ollama --version
+                        </code></pre>
+    <div class="alert alert-warning" role="alert">
+        如果提醒找不到ollama，那么你应该检查你的环境变量中是否能看到ollama，一般来讲ollama自动就会添加到环境变量中。
+    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- ollama version的输出块 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="ollama_version_output_head">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ollama_version_output" aria-expanded="false" aria-controls="ollama_version_output">
+                    示例输出
+                </button>
+            </h2>
+            <div id="ollama_version_output" class="accordion-collapse collapse" aria-labelledby="ollama_version_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-text">
+    ollama version is 0.33.3
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p>
+        能看到输出之后，就可以开始拉取大模型了，毕竟我这个电脑上1080ti 11GB的版本，所以我使用qwen2.5 3b的版本。大家可以根据自己的显卡显存和自己的用途（学习用/工程用）自行抉择。
+    </p>
+
+    <div class="alert alert-warning" role="alert">
+        国内用户需要换国内源，需要进入系统设置的高级环境变量，新建一个变量：
+        <table class="table table-striped table-responsive-md">
+            <thead>
+                <tr>
+                <th scope="col">变量名</th>
+                <th scope="col">变量值</th>
+                <th scope="col">备注</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <th scope="row">OLLAMA_HF_MIRROR</th>
+                <td>https://modelscope.cn</td>
+                <td>阿里的魔塔镜像，用qwen等模型方便</td>
+                </tr>
+            </tbody> 
+        </table>
+    </div>
+
+    <div class="accordion">
+        <!-- ollama version的块 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="ollama_pull_qwen_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ollama_pull_qwen_code" aria-expanded="true" aria-controls="ollama_version_code">
+                    拉取大模型
+                </button>
+            </h2>
+            <div id="ollama_pull_qwen_code" class="accordion-collapse collapse show" aria-labelledby="official_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+ollama pull qwen2.5:3b
+                        </code></pre>
+    <div class="alert alert-warning" role="alert">
+        这个具体的名字在魔塔社区中可以找到，如果不确定使用哪个名字，可以把对应模型的连接发给千问，问他应该怎么执行拉取。
+    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- ollama version的输出块 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="ollama_pull_qwen_output_head">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ollama_pull_qwen_output" aria-expanded="false" aria-controls="ollama_version_output">
+                    示例输出
+                </button>
+            </h2>
+            <div id="ollama_pull_qwen_output" class="accordion-collapse collapse" aria-labelledby="ollama_version_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-text">
+pulling manifest
+pulling 5ee4f07cdb9b: 100% ▕██████████████████████████████████████████████████████████▏ 1.9 GB
+pulling 66b9ea09bd5b: 100% ▕██████████████████████████████████████████████████████████▏   68 B
+pulling eb4402837c78: 100% ▕██████████████████████████████████████████████████████████▏ 1.5 KB
+pulling b5c0e5cf74cf: 100% ▕██████████████████████████████████████████████████████████▏ 7.4 KB
+pulling 161ddde4c9cd: 100% ▕██████████████████████████████████████████████████████████▏  487 B
+verifying sha256 digest
+writing manifest
+success
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 id="simple_use_qwen">
+        简单使用测试千问
+    </h2>
+
+    <div class="accordion">
+        <!-- ollama version的块 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="simple_use_qwen_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#simple_use_qwen_code" aria-expanded="true" aria-controls="ollama_version_code">
+                    进入qwen对话
+                </button>
+            </h2>
+            <div id="simple_use_qwen_code" class="accordion-collapse collapse show" aria-labelledby="official_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+ollama run qwen2.5:3b
+                        </code></pre>
+    <div class="alert alert-warning" role="alert">
+        这个run后面的名字，是你下载时使用的名字，注意更改
+    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <p>
+       执行完上面的命令之后，应该进入一个对话窗口，此时可以进行正常对话： 
+    </p>
+    <div id="simple_use_qwen_example" class="carousel slide w-75" data-bs-ride="false">
+        <div class="carousel-inner">
+            使用结果示例
+            <div class="carousel-item active">
+                <img src="/static/img/blog/LLM_use_from_scratch/1_simple_use_qwen.png" class="d-block w-100" alt="使用中文通义千问的搜索结果">
+            </div>
+        </div>
+    </div>
+
+    <p>
+        目前为止，大模型部署和简单使用都已经完成了。希望这个文档能帮助到你。
+    </p>
+
+    <h1 id="use_in_detail">
+        各种使用方式一览
+    </h1>
+
+    <h2 id="use_in_detail_cmd">
+        在命令行中使用
+    </h2>
+    <p>
+        就不再赘述了。上面说过了
+    </p>
+
+    <h2 id="use_in_detail_python">
+        在python中使用
+    </h2>
+    <p>
+        在使用之前，需要先执行命令运行ollama:
+    </p>
+    <div class="accordion">
+        <!-- ollama version的块 -->
+        <div id="ollama_pull_qwen_code" class="accordion-collapse collapse show" aria-labelledby="official_code">
+            <div class="accordion-body">
+                <!-- 官方代码 -->
+                <div class="position-relative border rounded p-3 bg-light">
+                    <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                    <pre class="mb-0"><code class="language-cmd">
+ollama serve
+                    </code></pre>
+    <div class="alert alert-warning" role="alert">
+        如果你安装完ollama之后没有什么特殊设置，理论上他已经运行了
+    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p>
+        打开浏览器访问ollama的默认端口(11434): <a href="http://localhost:11434/" target="_blank">本地的ollama</a>，如果你能看到"Ollama is running"，证明ollama serve正在运行。
+    </p>
+
+    <p>
+        在ollama正常运行的情况下，可以运行代码（使用openai包的方式），下面先展示代码，而具体环境包版本将列在最后。
+    </p>
+
+    <!-- 展示代码 -->
+    <div class="accordion" id="try_useing_llm_in_ollama_in_openai">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="try_useing_llm_in_ollama_in_openai_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#try_useing_llm_in_ollama_in_openai_code" aria-expanded="true" aria-controls="try_useing_llm_in_ollama_in_openai_code">
+                    运行代码
+                </button>
+            </h2>
+            <div id="try_useing_llm_in_ollama_in_openai_code" class="accordion-collapse collapse show" aria-labelledby="try_useing_llm_in_ollama_in_openai_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-python"># -*- coding: utf-8 -*-
+from openai import OpenAI
+"""
+before use this python script, your should have run "ollama serve" in your cmd.
+"""
+def main():
+    client = OpenAI(
+        base_url="http://localhost:11434/v1",
+        api_key="ollama"
+    )
+    """
+>>> ollama list
+NAME          ID              SIZE      MODIFIED
+qwen2.5:3b    357c53fb659c    1.9 GB    4 hours ago
+qwen3.5:2b    0689d44085e0    2.7 GB    28 hours ago
+    """
+    response = client.chat.completions.create(
+        model="qwen2.5:3b",  # the model name should be your model name in "ollama list"
+        messages=[
+            {
+                "role": "user",
+                "content": "Do you think using NVIDIA1080Ti to study basic LLMs usage is a good idea?"
+            }
+        ]
+    )
+    print(response.choices[0].message.content)
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+    <div class="alert alert-warning" role="alert">
+        注意：<code>"role": "user"</code>常见的值只有三个：system, user和assistant。有可能有的有tool或者developer，根据实际情况填写。
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        注意：<code>model="qwen2.5:3b"</code>必须是你自己的模型。第一次运行，由于需要加载模型，所以比较慢，短时间内多次运行，就快了。
+    </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="try_useing_llm_in_ollama_in_openai_output_head">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#try_useing_llm_in_ollama_in_openai_output" aria-expanded="false" aria-controls="try_useing_llm_in_ollama_in_openai_output">
+                    代码的输出
+                </button>
+            </h2>
+            <div id="try_useing_llm_in_ollama_in_openai_output" class="accordion-collapse collapse" aria-labelledby="try_useing_llm_in_ollama_in_openai_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+Using the NVIDIA 1080Ti for studying how to use large language models (LLMs) is definitely a good idea in theory, but there are a few important factors to consider before proceeding:
+1. **Resources**: The NVIDIA 1080Ti is a high-end GPU from a few years ago and is significantly less powerful than modern GPUs. It might not provide the fastest or most efficient training environment, especially if you are using more complex models or training them on a larger scale.
+2. **Usage Intensity**: LLMs often require significant training time and powerful hardware to achieve optimal performance and achieve state-of-the-art results. If your primary goal is to get a deep understanding of LLMs without necessarily needing to run benchmarks or perform advanced training, a more recent GPU might be unnecessary.
+3. **Scalability**: If you expect to scale your LLM training or use them for research, more flexible and scalable hardware might be better suited. The advancements in GPU technology mean that newer models perform better and are more efficient.
+4. **Future Requirements**: Given how rapidly the field of AI and LLMs evolves, it may be worth investing in a more powerful system if you expect to use LLMs for future projects or research.
+If your goal is simply to familiarize yourself with LLMs and understand the basics, a more powerful system might not be necessary. However, for in-depth research, training larger models, or running more demanding tasks, a newer and more powerful GPU would generally be recommended.
+In summary, you can achieve effective learning with the NVIDIA 1080Ti, but if you are thinking about a more ambitious or future-focused use of LLMs, investing in a more up-to-date system might be a better long-term investment.
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <h1 id="trouble_shotting">
+        遇到的问题和环境配置
+    </h1>
+
+    <h2 id="pip_pakage_list">
+        python包版本留档记录
+    </h2>
+    <div class="accordion" id="python_package_back">
+        <div class="accordion-item">
+            <div id="python_package_back_body" class="accordion-collapse collapse show" aria-labelledby="python_package_back_body">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+python==3.10.22
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.10.23
+exceptiongroup==1.3.1
+h11==0.16.0
+httpcore==1.0.9
+httpcore2==2.14.0
+httpx==0.28.1
+httpx2==2.14.0
+idna==3.20
+jiter==0.18.0
+openai==3.37.0
+packaging==26.3
+pydantic==2.14.1
+pydantic_core==2.50.1
+sniffio==1.3.1
+truststore==0.10.5
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+                        </code></pre>
+<div class="alert alert-warning" role="alert">
+    虽然有这么多包，只需要手动安装openai，其他的自动就安装了
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 id="ollama_fail_to_run">
+        遇到的问题1: 执行ollama run失败
+    </h2>
+
+
+
+    <!-- 展示代码 -->
+    <div class="accordion" id="bug1">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="bug1_code_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#bug1_code" aria-expanded="true" aria-controls="bug1_code">
+                    执行的代码
+                </button>
+            </h2>
+            <div id="bug1_code" class="accordion-collapse collapse show" aria-labelledby="bug1_code">
+                <div class="accordion-body">
+                    <!-- 官方代码 -->
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-python">
+ollama run qwen2.5:3b
+</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="bug1_output_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#bug1_output" aria-expanded="false" aria-controls="bug1_output">
+                   报错 
+                </button>
+            </h2>
+            <div id="bug1_output" class="accordion-collapse collapse show" aria-labelledby="bug1_output_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-cmd">
+Using the NVIDIA 1080Ti for studying how to use large language models (LLMs) is definitely a good idea in theory, but there are a few important factors to consider before proceeding:
+1. **Resources**: The NVIDIA 1080Ti is a high-end GPU from a few years ago and is significantly less powerful than modern GPUs. It might not provide the fastest or most efficient training environment, especially if you are using more complex models or training them on a larger scale.
+2. **Usage Intensity**: LLMs often require significant training time and powerful hardware to achieve optimal performance and achieve state-of-the-art results. If your primary goal is to get a deep understanding of LLMs without necessarily needing to run benchmarks or perform advanced training, a more recent GPU might be unnecessary.
+3. **Scalability**: If you expect to scale your LLM training or use them for research, more flexible and scalable hardware might be better suited. The advancements in GPU technology mean that newer models perform better and are more efficient.
+4. **Future Requirements**: Given how rapidly the field of AI and LLMs evolves, it may be worth investing in a more powerful system if you expect to use LLMs for future projects or research.
+If your goal is simply to familiarize yourself with LLMs and understand the basics, a more powerful system might not be necessary. However, for in-depth research, training larger models, or running more demanding tasks, a newer and more powerful GPU would generally be recommended.
+In summary, you can achieve effective learning with the NVIDIA 1080Ti, but if you are thinking about a more ambitious or future-focused use of LLMs, investing in a more up-to-date system might be a better long-term investment.
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- solve -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="bug1_solution_head">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#bug1_solution" aria-expanded="false" aria-controls="bug1_solution">
+                    解决方案
+                </button>
+            </h2>
+            <div id="bug1_solution" class="accordion-collapse collapse show" aria-labelledby="bug1_solution_head">
+                <div class="accordion-body">
+                    <div class="position-relative border rounded p-3 bg-light">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 copy-btn"><i class="bi bi-copy"></i></button>
+                        <pre class="mb-0"><code class="language-txt">
+升级显卡驱动即可。
+我遇到这个bug的时候，显卡驱动版本是570，ollama版本是0.33.3，而根据<a href="https://github.com/ollama/ollama/issues/17012" target="_blank">github的相同issue</a>页面，在驱动版本是580之后才对1080ti+ollama有了支持。
+如果你懒得折腾，我这里的ollama 0.33.3 + nvidia driver 581是肯定可以用的。
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- icon的按钮 -->
+    <button type="button" class="btn btn-primary" id="liveToastBtn"><i class="bi bi-card-list"></i></button>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+        <!-- <img src="https://via.placeholder.com/20" class="rounded me-2" alt="..."> -->
+        <strong class="me-auto">contents</strong>
+        <!-- <small>11 mins ago</small> -->
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <nav id="navbar-example3" class="h-100 flex-column align-items-stretch pe-4 border-end">
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link" href="#blog_title">安装ollama</a>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link" href="#setup_env">环境配置</a>
+                        <a class="nav-link ms-3 my-1" href="#confirm_env">确定安装环境</a>
+                        <a class="nav-link ms-3 my-1" href="#install_ollama">安装ollama</a>
+                        <a class="nav-link ms-3 my-1" href="#pull_models">拉取大模型</a>
+                        <a class="nav-link ms-3 my-1" href="#simple_use_qwen">简单使用测试千问</a>
+                    </nav>
+                </nav>
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link" href="#use_in_detail">各种使用方式一览</a>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link ms-3 my-1" href="#use_in_detail_cmd">在命令行中使用</a>
+                        <a class="nav-link ms-3 my-1" href="#use_in_detail_python">在python中使用</a>
+                    </nav>
+                </nav>
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link" href="#trouble_shotting">遇到的问题和环境配置</a>
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link ms-3 my-1" href="#pip_pakage_list">python包版本留档记录</a>
+                        <a class="nav-link ms-3 my-1" href="#ollama_fail_to_run">执行ollama run失败</a>
+                        <!-- <a class="nav-link" href="#setup_env">环境配置</a>
+                        <a class="nav-link ms-3 my-1" href="#confirm_env">确定安装环境</a>
+                        <a class="nav-link ms-3 my-1" href="#install_ollama">安装ollama</a>
+                        <a class="nav-link ms-3 my-1" href="#pull_models">拉取大模型</a>
+                        <a class="nav-link ms-3 my-1" href="#simple_use_qwen">简单使用测试千问</a> -->
+                    </nav>
+                </nav>
+            </nav>
+        </div>
+    </div>
+    </div>
+
+
+
+    <script>
+        const toastBtn = document.getElementById('liveToastBtn');
+        toastBtn.addEventListener('click', () => {
+            const toastEl = document.getElementById('liveToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        });
+
+        // 一键复制
+        document.querySelectorAll(".copy-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const code = btn.nextElementSibling.textContent;
+
+            navigator.clipboard.writeText(code).then(() => {
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            btn.classList.replace("btn-outline-secondary", "btn-success");
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-copy"></i>';
+                btn.classList.replace("btn-success", "btn-outline-secondary");
+            }, 1200);
+            });
+        });
+        });
+
+    </script>
+
+    <!-- icon图标，这个不知道为什么，放本地就报错 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <!-- <link rel="stylesheet" href="/static/css/bootstrap-icons.css" rel="stylesheet" crossorigin="anonymous"> -->
+    <script src="/static/js/bootstrap.bundle.5.2.3.min.js" crossorigin="anonymous"></script>
+    <link href="/static/css/bootstrap_5.2.3.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="/static/js/popper.min.js" crossorigin="anonymous"></script>
+
+  </body>
+</html>
